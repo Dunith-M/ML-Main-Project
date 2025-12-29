@@ -55,3 +55,45 @@ class GenderInputer:
         prediction = GenderPrediction(firstname=firstname, lastname=lastname, pred_gender=predicted_gender)
         logging.info(f'Predicted gender for {firstname} {lastname}: {prediction}')
         return prediction.pred_gender
+    
+    def impute(self, df):
+        missing_gender_index = df['Gender'].isnull()
+        for idx in df[missing_gender_index].index:
+            first_name = df.loc[idx, 'Firstname']
+            last_name = df.loc[idx, 'Lastname']
+            gender = self._predict_gender(first_name, last_name)
+            
+            if gender:
+                df.loc[idx, 'Gender'] = gender
+                print(f"{first_name} {last_name} : {gender}")
+            else:
+                print(f"{first_name} {last_name} : No Gender Detected")
+
+        return df
+    
+class FillMissingValuesStrategy(MissingValueHandlingStrategy):
+    """ 
+    Missing ---> Mean (Age)
+            ---> Custom (Gender)
+    """
+    def __init__(
+                self, 
+                method='mean', 
+                fill_value=None, 
+                relevant_column=None, 
+                is_custom_imputer=False,
+                custom_imputer=None
+                ):
+        self.method = method
+        self.fill_value = fill_value
+        self.relevant_column = relevant_column
+        self.is_custom_imputer = is_custom_imputer
+        self.custom_imputer = custom_imputer
+
+    def handle(self, df):
+        if self.is_custom_imputer:
+            return self.custom_imputer.impute(df)
+        df[self.relevant_column] = df[self.relevant_column].fillna(df[self.relevant_column].mean())
+        logging.info(f'Missing values filled in column {self.relevant_column}.')
+        return df
+    
