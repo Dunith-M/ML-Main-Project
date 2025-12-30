@@ -37,3 +37,28 @@ class IQROutlierDetection(OutlierDetectionStrategy):
         logging.info(f'✓ OUTLIER DETECTION COMPLETE - Total rows with outliers: {total_outliers} ({total_outliers/len(df)*100:.2f}%)')
         logging.info(f"{'='*60}\n")
         return outliers
+    
+class OutlierDetector:
+    def __init__(self, strategy):
+        self._strategy = strategy
+        logging.info(f"OutlierDetector initialized with strategy: {strategy.__class__.__name__}")
+
+    def detect_outliers(self, df, selected_columns):
+        logging.info(f"Detecting outliers in {len(selected_columns)} columns from dataframe with {len(df)} rows")
+        return self._strategy.detect_outliers(df, selected_columns)
+    
+    def handle_outliers(self, df, selected_columns, method='remove'):
+        logging.info(f"\n{'='*60}")
+        logging.info(f"OUTLIER HANDLING - {method.upper()}")
+        logging.info(f"{'='*60}")
+        logging.info(f"Handling outliers using method: {method}")
+        initial_rows = len(df)
+        outliers = self.detect_outliers(df, selected_columns)
+        outlier_count = outliers.sum(axis=1)
+        rows_to_remove = outlier_count >= 2
+        rows_removed = rows_to_remove.sum()
+        logging.info(f"✓ Removing rows with 2 or more outliers: {rows_removed} rows ({rows_removed/initial_rows*100:.2f}%)")
+        cleaned_df = df[~rows_to_remove]
+        logging.info(f"✓ Outlier removal complete - Remaining rows: {len(cleaned_df)} ({len(cleaned_df)/initial_rows*100:.2f}%)")
+        logging.info(f"{'='*60}\n")
+        return cleaned_df
